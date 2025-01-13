@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kinnarin casino</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/17.0.2/umd/react.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/17.0.2/umd/react-dom.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/6.26.0/babel.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap');
+
+        :root {
+            --primary: #4f3cc9;
+            --accent: #f7931a;
+            --win: #00c853;
+            --lose: #ff3d00;
+            --bg: #0a0b1e;
+            --card: #151629;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Montserrat', sans-serif;
+        }
+
+        body {
+            background: var(--bg);
+            color: #fff;
+            min-height: 100vh;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgb(40, 23, 97) 0%, transparent 30%),
+                radial-gradient(circle at 90% 80%, rgb(50, 26, 87) 0%, transparent 40%);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+
+        .game-container {
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        @media (max-width: 768px) {
+            .game-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .main-card {
+            background: var(--card);
+            border-radius: 12px;
+            padding: 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .balance-display {
+            background: linear-gradient(45deg, var(--primary), #6d5adb);
+            padding: 1.5rem;
+            border-radius: 8px;
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .balance-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+            margin-bottom: 0.5rem;
+        }
+
+        .balance-amount {
+            font-size: 2rem;
+            font-weight: 700;
+        }
+
+        .bet-controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .bet-amount {
+            font-size: 1.5rem;
+            font-weight: 600;
+            min-width: 100px;
+            text-align: center;
+        }
+
+        button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(79, 60, 201, 0.3);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .flip-button {
+            background: var(--accent);
+            font-size: 1.2rem;
+            padding: 1rem 2.5rem;
+            border-radius: 8px;
+            margin: 1rem auto;
+            display: block;
+            width: 200px;
+        }
+
+        .history-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 0.75rem;
+            border-radius: 6px;
+            margin-bottom: 0.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .win { color: var(--win); }
+        .lose { color: var(--lose); }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 0.75rem;
+            border-radius: 6px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            opacity: 0.7;
+        }
+
+        .hash-display {
+            font-family: monospace;
+            font-size: 0.8rem;
+            opacity: 0.7;
+            word-break: break-all;
+            margin-top: 0.5rem;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 0.5rem;
+            border-radius: 4px;
+        }
+
+        @keyframes flip {
+            0% { transform: rotateY(0deg); }
+            100% { transform: rotateY(720deg); }
+        }
+
+        .coin {
+    width: 100px; 
+    height: 100px; 
+    background: url('https://imgur.com/a/HXIWKc4') no-repeat center center;
+    background-size: cover; 
+    border-radius: 50%; 
+    margin: 1rem auto; 
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5); 
+}
+
+        .flipping {
+            animation: flip 1s ease-in-out;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        function Casino() {
+            const [balance, setBalance] = React.useState(1000);
+            const [betAmount, setBetAmount] = React.useState(10);
+            const [isFlipping, setIsFlipping] = React.useState(false);
+            const [history, setHistory] = React.useState([]);
+            const [currentHash, setCurrentHash] = React.useState('');
+            const [nonce, setNonce] = React.useState(0);
+            const [stats, setStats] = React.useState({
+                totalBets: 0,
+                totalWagered: 0,
+                wins: 0,
+                losses: 0
+            });
+
+            // Initialize game hash
+            React.useEffect(() => {
+                generateNewGameHash();
+            }, []);
+
+            function generateNewGameHash() {
+                const hash = CryptoJS.SHA256(Date.now().toString()).toString();
+                setCurrentHash(hash);
+                return hash;
+            }
+
+            function calculateResult(gameHash, nonce) {
+                const combinedHash = CryptoJS.SHA256(`${gameHash}-${nonce}`).toString();
+                const decimal = parseInt(combinedHash.substr(0, 8), 16);
+                return (decimal % 100) / 100;
+            }
+
+            const handleFlip = () => {
+                if (balance < betAmount || isFlipping) return;
+
+                setIsFlipping(true);
+                setBalance(prev => prev - betAmount);
+                setNonce(prev => prev + 1);
+
+                const result = calculateResult(currentHash, nonce);
+                const win = result < 0.5;
+
+                setTimeout(() => {
+                    const payout = win ? betAmount * 1.99 : 0;
+                    
+                    setBalance(prev => prev + payout);
+                    setHistory(prev => [{
+                        time: new Date().toLocaleTimeString(),
+                        bet: betAmount,
+                        win,
+                        payout,
+                        hash: currentHash.substr(0, 16) + '...',
+                        nonce
+                    }, ...prev].slice(0, 10));
+
+                    setStats(prev => ({
+                        totalBets: prev.totalBets + 1,
+                        totalWagered: prev.totalWagered + betAmount,
+                        wins: prev.wins + (win ? 1 : 0),
+                        losses: prev.losses + (win ? 0 : 1)
+                    }));
+
+                    setIsFlipping(false);
+
+                    // New game hash every few bets
+                    if (nonce % 5 === 0) {
+                        generateNewGameHash();
+                    }
+                }, 1000);
+            };
+
+            return (
+                <div className="container">
+                    <div className="game-container">
+                        <div className="main-card">
+                            <div className="balance-display">
+                                <div className="balance-label">YOUR BALANCE</div>
+                                <div className="balance-amount">${balance.toFixed(2)}</div>
+                            </div>
+
+                            <div className="coin" className={isFlipping ? "coin flipping" : "coin"}>
+                            </div>
+
+                            <div className="bet-controls">
+                                <button 
+                                    onClick={() => setBetAmount(Math.max(10, betAmount - 10))}
+                                    disabled={betAmount <= 10}
+                                >
+                                    -10
+                                </button>
+                                <div className="bet-amount">${betAmount}</div>
+                                <button 
+                                    onClick={() => setBetAmount(Math.min(balance, betAmount + 10))}
+                                    disabled={betAmount + 10 > balance}
+                                >
+                                    +10
+                                </button>
+                            </div>
+
+                            <button 
+                                className="flip-button"
+                                onClick={handleFlip}
+                                disabled={isFlipping || balance < betAmount}
+                            >
+                                {isFlipping ? "Flipping..." : "FLIP"}
+                            </button>
+
+                            <div className="hash-display">
+                                Game Hash: {currentHash.substr(0, 16)}...
+                            </div>
+                        </div>
+
+                        <div className="sidebar">
+                            <div className="main-card">
+                                <h3 style={{marginBottom: '1rem'}}>Statistics</h3>
+                                <div className="stats-grid">
+                                    <div className="stat-card">
+                                        <div className="stat-value">{stats.totalBets}</div>
+                                        <div className="stat-label">Total Bets</div>
+                                    </div>
+                                    <div className="stat-card">
+                                        <div className="stat-value">${stats.totalWagered}</div>
+                                        <div className="stat-label">Total Wagered</div>
+                                    </div>
+                                    <div className="stat-card">
+                                        <div className="stat-value">{stats.wins}</div>
+                                        <div className="stat-label">Wins</div>
+                                    </div>
+                                    <div className="stat-card">
+                                        <div className="stat-value">{stats.losses}</div>
+                                        <div className="stat-label">Losses</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="main-card" style={{marginTop: '1rem'}}>
+                                <h3 style={{marginBottom: '1rem'}}>Recent Plays</h3>
+                                {history.map((flip, i) => (
+                                    <div key={i} className="history-item">
+                                        <div>#{flip.nonce}</div>
+                                        <div className={flip.win ? "win" : "lose"}>
+                                            {flip.win ? 
+                                                `+$${flip.payout.toFixed(2)}` : 
+                                                `-$${flip.bet}`
+                                            }
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.render(<Casino />, document.getElementById('root'));
+    </script>
+</body>
+</html>
